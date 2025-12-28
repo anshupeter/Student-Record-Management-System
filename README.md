@@ -52,6 +52,42 @@ javac Student.java StudentGUI.java
 java StudentGUI
 ```
 
+### New (recommended) — Maven project
+
+Build and run using Maven from the project root:
+
+```powershell
+mvn package
+java -jar target\student-manager-1.0-SNAPSHOT.jar
+```
+
+Or run the provided launcher on Windows which will try JAR → Maven → javac in order:
+
+```powershell
+StudentGUI.bat
+```
+
+If you prefer to compile and run directly with the JDK (fallback):
+
+```powershell
+javac -d out src\main\java\com\studentmanager\*.java
+java -cp out com.studentmanager.StudentGUI
+```
+
+### CLI (console) JAR
+
+A runnable CLI JAR is available in the `target/` folder. You can run the console application (`Main`) directly using:
+
+```powershell
+java -jar target\student-manager-cli-1.0-SNAPSHOT.jar
+```
+
+Alternatively, run the compiled classes directly (no JAR):
+
+```powershell
+java -cp out com.studentmanager.Main
+```
+
 ## GUI Features
 - **Add Student**: Enter roll number, name, and marks, then click "Add Student"
 - **Update Student**: Select a row in the table, modify the fields, then click "Update Student"
@@ -79,3 +115,6 @@ The GUI version automatically saves student data to a file called `students.txt`
 ## Requirements
 - Java 8 or higher
 - No external dependencies required
+
+
+

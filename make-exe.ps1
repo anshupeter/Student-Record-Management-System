@@ -1,42 +1,57 @@
-Write-Host "Student Record Management System - EXE Creator" -ForegroundColor Cyan
-Write-Host "=============================================" -ForegroundColor Cyan
+Write-Host "Creating launcher scripts (supports JAR, Maven, or javac)" -ForegroundColor Cyan
 
-# Check if JAR file exists
-if (!(Test-Path "StudentGUI.jar")) {
-    Write-Host "Error: StudentGUI.jar not found!" -ForegroundColor Red
-    exit 1
-}
+Set-Location -Path (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
-Write-Host "Found StudentGUI.jar" -ForegroundColor Green
-
-# Create batch file
-@'
+# Batch wrapper (same as create-exe.ps1)
+$batch = @'
 @echo off
-title Student Record Management System
 cd /d "%~dp0"
-java -jar StudentGUI.jar
-pause
-'@ | Out-File -FilePath "StudentGUI.bat" -Encoding ASCII
+if exist "StudentGUI.jar" (
+    java -jar StudentGUI.jar
+    goto :EOF
+)
 
+mvn -q -v >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo Building with Maven...
+    mvn -q package
+    if exist "target\student-manager-1.0-SNAPSHOT.jar" (
+        java -jar target\student-manager-1.0-SNAPSHOT.jar
+        goto :EOF
+    )
+)
+
+javac -version >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    if not exist out mkdir out
+    javac -d out src\main\java\com\studentmanager\*.java
+    if %ERRORLEVEL% EQU 0 (
+        java -cp out com.studentmanager.StudentGUI
+        goto :EOF
+    )
+)
+
+echo Could not start application. Ensure JAR exists or install Maven/JDK.
+pause
+'@
+
+$batch | Out-File -FilePath "StudentGUI.bat" -Encoding ASCII
 Write-Host "Created StudentGUI.bat" -ForegroundColor Green
 
-# Create VBScript for silent execution
-@'
+# Silent VBScript
+$vbs = @'
 Set objShell = CreateObject("WScript.Shell")
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 strCurrentDir = objFSO.GetParentFolderName(WScript.ScriptFullName)
-strJarPath = strCurrentDir & "\StudentGUI.jar"
+strJarPath = strCurrentDir & "\" & "StudentGUI.jar"
 If objFSO.FileExists(strJarPath) Then
-    objShell.Run "java -jar """ & strJarPath & """", 0, False
+    objShell.Run "java -jar " & Chr(34) & strJarPath & Chr(34), 0, False
 Else
-    MsgBox "StudentGUI.jar not found!", vbCritical
+    MsgBox "StudentGUI.jar not found. Use StudentGUI.bat to build/run the project.", vbExclamation
 End If
-'@ | Out-File -FilePath "StudentGUI.vbs" -Encoding ASCII
+'@
 
+$vbs | Out-File -FilePath "StudentGUI.vbs" -Encoding ASCII
 Write-Host "Created StudentGUI.vbs (silent mode)" -ForegroundColor Green
 
-Write-Host ""
-Write-Host "Executable files created:" -ForegroundColor Yellow
-Write-Host "1. StudentGUI.bat - Double-click to run (shows console)" -ForegroundColor White
-Write-Host "2. StudentGUI.vbs - Double-click to run (silent mode)" -ForegroundColor White
-Write-Host "3. StudentGUI.jar - Original JAR file" -ForegroundColor White
+Write-Host "Done. Use StudentGUI.bat to run (supports Maven and javac fallbacks)." -ForegroundColor Green

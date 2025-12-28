@@ -1,5 +1,5 @@
 @echo off
-title Student Record Management System
+title Student Record Management System - Enhanced
 echo.
 echo ===============================================
 echo   Student Record Management System v2.0
@@ -8,43 +8,41 @@ echo.
 echo Starting application...
 echo.
 
-REM Check if Java is installed
-java -version >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo ERROR: Java is not installed or not in PATH!
-    echo.
-    echo Please install Java JRE 8 or higher from:
-    echo https://www.oracle.com/java/technologies/javase-downloads.html
-    echo.
-    echo Or install OpenJDK from:
-    echo https://adoptium.net/
-    echo.
-    pause
-    exit /b 1
+REM Preferred: delegate to StudentGUI.bat which handles jar/maven/javac
+if exist "StudentGUI.bat" (
+    call StudentGUI.bat
+    goto :EOF
 )
 
-REM Check if JAR file exists
-if not exist "StudentGUI.jar" (
-    echo ERROR: StudentGUI.jar not found!
-    echo Please ensure StudentGUI.jar is in the same directory as this batch file.
-    echo.
-    pause
-    exit /b 1
+REM If StudentGUI.bat missing, try JAR
+if exist "StudentGUI.jar" (
+    java -jar StudentGUI.jar
+    goto :EOF
 )
 
-REM Launch the application
-echo Java detected. Launching Student Management System...
-echo.
-java -jar StudentGUI.jar
+REM Try Maven build-and-run
+mvn -q -v >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo Building with Maven...
+    mvn -q package
+    if exist "target\student-manager-1.0-SNAPSHOT.jar" (
+        java -jar target\student-manager-1.0-SNAPSHOT.jar
+        goto :EOF
+    )
+)
 
-REM Check if application closed normally
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo Application encountered an error.
-    echo Error code: %ERRORLEVEL%
-    echo.
+REM Try compiling with javac
+javac -version >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo Compiling with javac...
+    if not exist out mkdir out
+    javac -d out src\main\java\com\studentmanager\*.java
+    if %ERRORLEVEL% EQU 0 (
+        java -cp out com.studentmanager.StudentGUI
+        goto :EOF
+    )
 )
 
 echo.
-echo Thank you for using Student Record Management System!
+echo Could not start application. Ensure a JAR exists or install Maven/JDK.
 pause

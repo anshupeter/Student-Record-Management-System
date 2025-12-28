@@ -5,115 +5,105 @@ Write-Host "Student Record Management System - EXE Creator" -ForegroundColor Cya
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Check if JAR file exists
-if (!(Test-Path "StudentGUI.jar")) {
-    Write-Host "Error: StudentGUI.jar not found!" -ForegroundColor Red
-    Write-Host "Please run this script from the directory containing StudentGUI.jar" -ForegroundColor Red
-    exit 1
-}
+# Create launcher scripts that support JAR, Maven build, or direct javac/java run
 
-Write-Host "✓ StudentGUI.jar found" -ForegroundColor Green
+Set-Location -Path (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
-# Method 1: Create a batch file wrapper (simplest method)
-Write-Host ""
-Write-Host "Creating batch file wrapper..." -ForegroundColor Yellow
+Write-Host "Creating launcher wrappers (supports JAR, Maven, or javac)..." -ForegroundColor Cyan
 
-$batchContent = @"
+# Batch wrapper
+$batch = @'
 @echo off
-title Student Record Management System
 cd /d "%~dp0"
-if not exist "StudentGUI.jar" (
-    echo Error: StudentGUI.jar not found!
-    pause
-    exit /b 1
+REM Prefer existing JAR
+if exist "StudentGUI.jar" (
+    java -jar StudentGUI.jar
+    goto :EOF
 )
-java -jar StudentGUI.jar
-if errorlevel 1 (
-    echo.
-    echo Error: Java is not installed or not in PATH!
-    echo Please install Java JRE 8 or higher.
-    echo.
-    pause
+
+REM Try Maven
+mvn -q -v >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo Building with Maven...
+    mvn -q package
+    if exist "target\student-manager-1.0-SNAPSHOT.jar" (
+        java -jar target\student-manager-1.0-SNAPSHOT.jar
+        goto :EOF
+    )
 )
-"@
 
-$batchContent | Out-File -FilePath "StudentGUI.bat" -Encoding ASCII
+REM Fallback to javac
+javac -version >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    if not exist out mkdir out
+    javac -d out src\main\java\com\studentmanager\*.java
+    if %ERRORLEVEL% EQU 0 (
+        java -cp out com.studentmanager.StudentGUI
+        goto :EOF
+    )
+)
 
-Write-Host "✓ Created StudentGUI.bat" -ForegroundColor Green
+echo Could not start application. Ensure JAR exists or install Maven/JDK.
+pause
+'@
 
-# Method 2: Create PowerShell script wrapper
-Write-Host ""
-Write-Host "Creating PowerShell script wrapper..." -ForegroundColor Yellow
+$batch | Out-File -FilePath "StudentGUI.bat" -Encoding ASCII
+Write-Host "Created StudentGUI.bat" -ForegroundColor Green
 
-$psContent = @"
-# Student Record Management System Launcher
-param([switch]$NoExit)
+# PowerShell wrapper
+$ps = @'
+Set-Location -Path (Split-Path -Parent $MyInvocation.MyCommand.Path)
 
-Set-Location -Path (Split-Path -Parent `$MyInvocation.MyCommand.Path)
-
-if (!(Test-Path "StudentGUI.jar")) {
-    Write-Host "Error: StudentGUI.jar not found!" -ForegroundColor Red
-    if (!`$NoExit) { Read-Host "Press Enter to exit" }
-    exit 1
+if (Test-Path "StudentGUI.jar") {
+    java -jar StudentGUI.jar
+    return
 }
 
 try {
-    Write-Host "Starting Student Record Management System..." -ForegroundColor Green
-    java -jar StudentGUI.jar
-} catch {
-    Write-Host "Error: Could not start the application!" -ForegroundColor Red
-    Write-Host "Make sure Java JRE 8+ is installed and in your PATH." -ForegroundColor Yellow
-    if (!`$NoExit) { Read-Host "Press Enter to exit" }
-}
-"@
+    & mvn -q -v >$null 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Building with Maven..."
+        & mvn -q package
+        $jar = Join-Path -Path (Get-Location) -ChildPath 'target\student-manager-1.0-SNAPSHOT.jar'
+        if (Test-Path $jar) {
+            & java -jar $jar
+            return
+        }
+    }
+} catch {}
 
-$psContent | Out-File -FilePath "StudentGUI.ps1" -Encoding UTF8
+try {
+    & javac -version >$null 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        if (-not (Test-Path .\out)) { New-Item -ItemType Directory -Path .\out | Out-Null }
+        & javac -d out src\main\java\com\studentmanager\*.java
+        if ($LASTEXITCODE -eq 0) {
+            & java -cp out com.studentmanager.StudentGUI
+            return
+        }
+    }
+} catch {}
 
-Write-Host "✓ Created StudentGUI.ps1" -ForegroundColor Green
+Write-Host "Could not start application. Ensure JAR exists or install Maven/JDK." -ForegroundColor Yellow
+'@
 
-# Method 3: Create a VBScript wrapper (runs without console window)
-Write-Host ""
-Write-Host "Creating VBScript wrapper (silent mode)..." -ForegroundColor Yellow
+$ps | Out-File -FilePath "StudentGUI.ps1" -Encoding UTF8
+Write-Host "Created StudentGUI.ps1" -ForegroundColor Green
 
-$vbsContent = @"
-' Student Record Management System Silent Launcher
+# VBScript silent launcher
+$vbs = @'
 Set objShell = CreateObject("WScript.Shell")
 Set objFSO = CreateObject("Scripting.FileSystemObject")
-
-' Get the directory where this script is located
 strCurrentDir = objFSO.GetParentFolderName(WScript.ScriptFullName)
 
-' Check if JAR file exists
-strJarPath = strCurrentDir & "\StudentGUI.jar"
-If Not objFSO.FileExists(strJarPath) Then
-    MsgBox "Error: StudentGUI.jar not found!" & vbCrLf & "Please ensure the JAR file is in the same directory as this script.", vbCritical, "Student Management System"
-    WScript.Quit 1
+strJarPath = strCurrentDir & "\" & "StudentGUI.jar"
+If objFSO.FileExists(strJarPath) Then
+    objShell.Run "java -jar " & Chr(34) & strJarPath & Chr(34), 0, False
+Else
+    MsgBox "StudentGUI.jar not found. Please run StudentGUI.bat to build/run the project.", vbExclamation, "Launcher"
 End If
+'@
 
-' Launch the Java application silently (no console window)
-strCommand = "java -jar """ & strJarPath & """"
-objShell.Run strCommand, 0, False
-"@
-
-$vbsContent | Out-File -FilePath "StudentGUI-Silent.vbs" -Encoding ASCII
-
-Write-Host "✓ Created StudentGUI-Silent.vbs (runs without console)" -ForegroundColor Green
-
-Write-Host ""
-Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host "Executable files created successfully!" -ForegroundColor Green
-Write-Host ""
-Write-Host "You now have several ways to run your application:" -ForegroundColor White
-Write-Host ""
-Write-Host "1. StudentGUI.bat        - Batch file (shows console)" -ForegroundColor Yellow
-Write-Host "2. StudentGUI.ps1        - PowerShell script" -ForegroundColor Yellow  
-Write-Host "3. StudentGUI-Silent.vbs - VB Script (no console window)" -ForegroundColor Yellow
-Write-Host "4. StudentGUI.jar        - Original JAR file" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "For true EXE creation, you can use tools like:" -ForegroundColor Cyan
-Write-Host "• Launch4j (free): http://launch4j.sourceforge.net/" -ForegroundColor White
-Write-Host "• jpackage (Java 14+): Built into newer Java versions" -ForegroundColor White
-Write-Host "• exe4j (commercial): http://www.ej-technologies.com/products/exe4j/overview.html" -ForegroundColor White
-Write-Host ""
-Write-Host "Recommended: Use StudentGUI-Silent.vbs for the best user experience!" -ForegroundColor Green
-Write-Host ""
+$vbs | Out-File -FilePath "StudentGUI-Silent.vbs" -Encoding ASCII
+Write-Host "Created StudentGUI-Silent.vbs" -ForegroundColor Green
+Write-Host "Done. Use StudentGUI.bat or StudentGUI.ps1 to run (supports Maven and javac fallbacks)." -ForegroundColor Green
