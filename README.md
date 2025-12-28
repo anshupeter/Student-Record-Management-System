@@ -1,120 +1,122 @@
 # Student Record Management System
 
-This project contains both console-based and GUI-based versions of a Student Record Management System written in Java.
+A small Java application that provides both a console (CLI) and a graphical (Swing) interface for managing student records. The project demonstrates basic CRUD operations, file-based persistence, and a simple Swing UI for convenient interaction.
 
-## Files Overview
-
-### Core Classes
-- **`Student.java`** - Student data model class with encapsulated fields and methods
-- **`StudentManager.java`** - Console-based manager for CRUD operations
-- **`Main.java`** - Console application entry point
-- **`StudentGUI.java`** - GUI-based application using Java Swing
+---
 
 ## Features
 
-### Console Version (Main.java)
-- Add new student records
-- View all student records
-- Search students by roll number
-- Update existing student information
-- Delete student records
-- Simple text-based menu interface
+- Console (CLI) version:
+  - Add, view, search, update and delete student records
+  - Simple text-based menu for interaction
 
-### GUI Version (StudentGUI.java)
-- Modern graphical user interface
-- Data table to display all students
-- Input forms for student information
-- Click-to-select functionality
-- Real-time search feature
-- Confirmation dialogs for deletions
-- Error handling with user-friendly messages
-- **Data persistence using file-based storage**
-- **Automatic data loading on startup**
-- **Automatic data saving on changes**
+- GUI (Swing) version:
+  - Table view of students with click-to-select support
+  - Input forms for student details (roll number, name, marks)
+  - Real-time search and selection highlighting
+  - Confirmation dialogs for destructive actions
+  - Error handling and input validation
+  - Automatic load/save to a CSV file (`students.txt`)
 
-## How to Run
+---
 
-### Console Version
+## Files overview
+
+- `src/main/java/com/studentmanager/Student.java` — Student data model
+- `src/main/java/com/studentmanager/StudentManager.java` — Console-based manager and persistence helpers
+- `src/main/java/com/studentmanager/Main.java` — Console application entry point
+- `src/main/java/com/studentmanager/StudentGUI.java` — Swing GUI application
+- `src/main/resources/students.txt` — Sample or packaged student data
+- `students.txt` — Project-level student data file used at runtime
+- `pom.xml` — Maven build configuration
+- `StudentGUI.bat`, `run-student-gui.bat`, `StudentGUI-Enhanced.bat` — Windows launchers
+
+---
+
+## Technical Details
+
+- Java Swing is used for the GUI components.
+- Data is stored in a simple CSV format in `students.txt` and loaded into an `ArrayList` at runtime.
+- Changes are persisted automatically on add/update/delete operations.
+- Object-oriented structure with encapsulation and input validation.
+
+---
+
+## Requirements
+
+- Java JDK 8 or later
+- Maven (recommended for building and packaging)
+- No external libraries required
+
+---
+
+## Build & Run
+
+Preferred (Maven):
+
 ```bash
-# Compile
-javac Student.java StudentManager.java Main.java
-
-# Run
-java Main
+mvn clean package
 ```
 
-### GUI Version
+Run the GUI or CLI JAR from the `target/` directory (example):
+
 ```bash
-# Compile
-javac Student.java StudentGUI.java
-
-# Run
-java StudentGUI
+java -jar target\\student-manager-1.0-SNAPSHOT.jar
 ```
 
-### New (recommended) — Maven project
+Run the CLI-specific JAR (if present):
 
-Build and run using Maven from the project root:
-
-```powershell
-mvn package
-java -jar target\student-manager-1.0-SNAPSHOT.jar
+```bash
+javac -d out src\main\java\com\studentmanager\*.java
+java -cp out com.studentmanager.Main
 ```
 
-Or run the provided launcher on Windows which will try JAR → Maven → javac in order:
+Windows launcher (tries JAR → Maven → javac):
 
 ```powershell
 StudentGUI.bat
 ```
 
-If you prefer to compile and run directly with the JDK (fallback):
+Fallback (compile and run with `javac`):
 
-```powershell
-javac -d out src\main\java\com\studentmanager\*.java
+```bash
+javac -d out src\\main\\java\\com\\studentmanager\\*.java
 java -cp out com.studentmanager.StudentGUI
 ```
 
-### CLI (console) JAR
+## GUI Usage (quick)
 
-A runnable CLI JAR is available in the `target/` folder. You can run the console application (`Main`) directly using:
+- Add Student: fill roll number, name and marks, then click **Add Student**.
+- Update Student: select a table row, edit fields, then click **Update Student**.
+- Delete Student: select a table row and click **Delete Student** (confirm when prompted).
+- Search Student: use the search field or **Search Student** button to locate by roll number.
+- Clear Fields: reset input fields and table selection.
 
-```powershell
-java -jar target\student-manager-cli-1.0-SNAPSHOT.jar
-```
-
-Alternatively, run the compiled classes directly (no JAR):
-
-```powershell
-java -cp out com.studentmanager.Main
-```
-
-## GUI Features
-- **Add Student**: Enter roll number, name, and marks, then click "Add Student"
-- **Update Student**: Select a row in the table, modify the fields, then click "Update Student"
-- **Delete Student**: Select a row and click "Delete Student" (with confirmation dialog)
-- **Search Student**: Click "Search Student" and enter a roll number to find and highlight
-- **Clear Fields**: Reset all input fields and deselect table rows
-
-## Technical Details
-- Uses Java Swing for GUI components
-- File-based data storage using `students.txt`
-- Automatic data persistence (saves on every change)
-- Data automatically loaded when application starts
-- ArrayList for in-memory data storage
-- Object-oriented design with proper encapsulation
-- Input validation and error handling
-- Table-based data display with selection support
+---
 
 ## Data Storage
-The GUI version automatically saves student data to a file called `students.txt` in the same directory as the application. The data is:
-- **Automatically saved** when you add, update, or delete students
-- **Automatically loaded** when you start the application
-- **Stored in CSV format** for easy reading and portability
-- **Persistent across application restarts** - your data won't be lost!
 
-## Requirements
-- Java 8 or higher
-- No external dependencies required
+- The GUI uses `students.txt` in the application directory as the canonical data store.
+- Data is saved in CSV format and is loaded automatically on startup.
+- The file is updated after each change, ensuring persistence across restarts.
 
+---
 
+## Packaging notes
 
+- If you want a self-contained runnable JAR, configure the Maven `maven-jar-plugin` or `maven-shade-plugin` and set the `Main-Class` in the manifest.
+- I can add a Maven plugin configuration to `pom.xml` on request.
+
+---
+
+## Contributing
+
+- Improvements, bug fixes, and documentation updates are welcome. Please open issues or submit pull requests.
+
+---
+
+## License
+
+No license is specified. Add a `LICENSE` file to apply an open-source license.
+
+---
